@@ -1,15 +1,18 @@
 # FastAPI User & Product Management System
 
-A modern, well-structured FastAPI application demonstrating best practices for building scalable web APIs with comprehensive user and product management functionality.
+A modern, well-structured FastAPI application demonstrating best practices for building scalable web APIs with comprehensive user and product management functionality, featuring JWT authentication and secure user registration.
 
 ## 🚀 Features
 
 - **RESTful API** - Clean API endpoints for user and product management
+- **JWT Authentication** - Complete authentication system with token-based security
+- **User Registration & Login** - Secure user registration with password hashing and login functionality
 - **Database Integration** - SQLAlchemy ORM with configurable database support
 - **Admin Interface** - HTML templates for user and product administration
 - **Modular Architecture** - Well-organized code structure following FastAPI best practices
 - **Environment Configuration** - Secure configuration management with Pydantic Settings
-- **Authentication Ready** - Security module prepared for authentication implementation
+- **Password Security** - BCrypt password hashing with salt for enhanced security
+- **Protected Routes** - JWT token validation for secure API endpoints
 - **Partial Updates** - Advanced PATCH operations supporting selective field updates
 - **Full CRUD Operations** - Complete Create, Read, Update, Delete functionality for all entities
 
@@ -18,32 +21,35 @@ A modern, well-structured FastAPI application demonstrating best practices for b
 ```
 ├── app/
 │   ├── api/
-│   │   └── deps.py              # API dependencies
+│   │   └── deps.py              # API dependencies & JWT authentication
 │   ├── core/
-│   │   ├── config.py            # Application configuration
-│   │   └── security.py          # Security utilities
+│   │   ├── config.py            # Application configuration with JWT settings
+│   │   └── security.py          # Security utilities, JWT & password hashing
 │   ├── crud/
 │   │   ├── user.py              # User database operations
 │   │   └── product.py           # Product database operations
 │   ├── db/
 │   │   └── session.py           # Database session management
 │   ├── models/
-│   │   ├── user.py              # User SQLAlchemy model
+│   │   ├── user.py              # User SQLAlchemy model with authentication
 │   │   └── product.py           # Product SQLAlchemy model
 │   ├── router/
-│   │   ├── info.py              # Information endpoints
+│   │   ├── auth.py              # Authentication endpoints (register/login)
 │   │   ├── user.py              # User management endpoints
 │   │   └── product.py           # Product management endpoints
 │   ├── schemas/
-│   │   ├── user.py              # User Pydantic schemas
+│   │   ├── user.py              # User Pydantic schemas with JWT tokens
 │   │   └── product.py           # Product Pydantic schemas
 │   ├── templates/
 │   │   ├── users.html           # User admin templates
 │   │   └── products.html        # Product admin templates
-│   └── main.py                  # Application entry point
+│   ├── main.py                  # Application entry point
+│   ├── requirements.txt         # App-specific Python dependencies
+│   └── test.db                  # SQLite database file
+├── dev2/                        # Virtual environment directory
 ├── .env                         # Environment variables
 ├── .env.example                 # Environment template
-├── requirements.txt             # Python dependencies
+├── requirements.txt             # Root Python dependencies
 └── README.md                    # Project documentation
 ```
 
@@ -91,7 +97,10 @@ A modern, well-structured FastAPI application demonstrating best practices for b
 
    ```env
    API_KEY=your_api_key_here
-   DATABASE_URL=sqlite:///./app.db
+   DATABASE_URL=sqlite:///./test.db
+   SECRET_KEY=your_secret_key_for_jwt_here
+   ALGORITHM=HS256
+   ACCESS_TOKEN_EXPIRE_MINUTES=30
    ```
 
 5. **Run the application**
@@ -112,13 +121,15 @@ Once the application is running, you can access:
 
 ## 🔗 API Endpoints
 
-### Information Endpoints
+### Authentication Endpoints
 
-- `GET /api/v1/info/*` - Application information endpoints
+- `POST /api/v1/auth/register` - Register new user account
+- `POST /api/v1/auth/token` - Login and get JWT access token
+- `GET /api/v1/auth/me` - Get current authenticated user info (protected)
 
 ### User Management
 
-- `GET /api/v1/user/*` - User management endpoints
+- `GET /api/v1/user/*` - User management endpoints (protected)
 - `GET /admin/users` - Admin interface for viewing all users
 
 ### Product Management
@@ -140,6 +151,8 @@ The application uses SQLAlchemy ORM with the following models:
 - `id` - Primary key (Integer)
 - `username` - Unique username (String)
 - `email` - Unique email address (String)
+- `hashed_password` - Securely hashed password (String)
+- `is_active` - User account status (Boolean)
 
 ### Product Model
 
@@ -157,11 +170,20 @@ This project follows FastAPI best practices with a modular architecture:
 
 - **Separation of Concerns** - Clear separation between API routes, business logic, and data access
 - **Dependency Injection** - Proper use of FastAPI's dependency injection system
-- **Pydantic Models** - Type-safe request/response models
-- **Environment Configuration** - Secure configuration management
+- **Pydantic Models** - Type-safe request/response models with JWT token schemas
+- **Environment Configuration** - Secure configuration management with JWT settings
 - **Template Support** - Jinja2 templates for admin interfaces
+- **Security First** - JWT authentication, password hashing, and protected routes
+- **OAuth2 Compliance** - Standard OAuth2 password bearer token implementation
 
 ## 🔧 Development
+
+### Authentication Flow
+
+1. **Register**: `POST /api/v1/auth/register` with username, email, and password
+2. **Login**: `POST /api/v1/auth/token` with username and password to get JWT token
+3. **Access Protected Routes**: Include `Authorization: Bearer <token>` header
+4. **Token Validation**: Automatic validation via dependency injection
 
 ### Adding New Features
 
@@ -170,6 +192,7 @@ This project follows FastAPI best practices with a modular architecture:
 3. **CRUD Operations** - Implement database operations in `app/crud/`
 4. **API Routes** - Add new endpoints in `app/router/`
 5. **Templates** - Add HTML templates in `app/templates/`
+6. **Authentication** - Use `get_current_user` dependency for protected routes
 
 ### Key Implementation Details
 
@@ -192,6 +215,37 @@ This will update only the price field, leaving name, description, and stock unch
 - **ProductCreate/ProductUpdate**: All fields required
 - **ProductPatch**: All fields optional for selective updates
 - **Field Validation**: Built-in validation for price (> 1), name length (2-10 chars)
+- **UserCreate**: Username, email (validated), and password required
+- **JWT Tokens**: Access token with configurable expiration time
+
+### Authentication Examples
+
+#### Register a new user
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/auth/register" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "username": "testuser",
+       "email": "test@example.com",
+       "password": "securepassword123"
+     }'
+```
+
+#### Login to get JWT token
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/auth/token" \
+     -H "Content-Type: application/x-www-form-urlencoded" \
+     -d "username=testuser&password=securepassword123"
+```
+
+#### Access protected endpoint
+
+```bash
+curl -X GET "http://localhost:8000/api/v1/auth/me" \
+     -H "Authorization: Bearer <your_jwt_token_here>"
+```
 
 ### Running in Development Mode
 
@@ -206,6 +260,7 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 1. **Set production environment variables**
 2. **Use a production WSGI server**:
+
    ```bash
    pip install gunicorn
    gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app
@@ -242,14 +297,18 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 🔍 Additional Notes
 
-- The application uses SQLite by default but can be configured for other databases
-- Security features are prepared but may need additional implementation for production use
+- The application uses SQLite by default (`test.db`) but can be configured for other databases
+- **Full JWT Authentication** implemented with secure password hashing using BCrypt
+- User registration includes duplicate username/email validation
+- JWT tokens expire after 30 minutes (configurable via environment variables)
 - The admin interface provides simple HTML views for user and product management
 - All API endpoints are automatically documented via FastAPI's built-in documentation
 - PATCH operations support partial updates - only send the fields you want to change
 - Full CRUD operations available for both users and products
-- API key authentication is implemented for all endpoints
+- Protected routes require valid JWT token in Authorization header
+- Password security follows industry best practices with salt and hashing
 
 ## 📞 Support
 
 For questions or issues, please open an issue in the repository or contact the development team.
+
