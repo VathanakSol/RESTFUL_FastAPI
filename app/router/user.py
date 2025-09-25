@@ -2,10 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session 
 from typing import List
 
-from schemas.user import UserCreate, UserUpdate, UserOut
+from schemas.user import UserCreate, UserUpdate, UserOut, BaseResponse
 from crud import user as crud
 from api.deps import get_db
 from core.security import get_api_key
+
 router = APIRouter()
 
 # List all users
@@ -14,35 +15,34 @@ def list_users(db: Session = Depends(get_db), api_key: str = Depends(get_api_key
     return crud.get_users(db)
 
 # Create user
-@router.post("/", response_model=UserOut)
+@router.post("/", response_model=BaseResponse[UserOut])
 def create_user(user: UserCreate, db: Session = Depends(get_db), api_key: str = Depends(get_api_key)):
-    return crud.create_user(db, user)
+    user_create = crud.create_user(db, user)
+    return BaseResponse(message="User Created Successfully ✅", data=user_create)
 
 # Get user via ID
-@router.get("/{user_id}", response_model=UserOut)
+@router.get("/{user_id}", response_model=BaseResponse[UserOut])
 def get_user(user_id: int, db: Session = Depends(get_db), api_key: str = Depends(get_api_key)):
     db_user = crud.get_user(db, user_id)
     if not db_user:
         raise HTTPException(status_code=404, detail="User Not Found")
-    return db_user
+    return BaseResponse(message="User Founded 🔍", data=db_user)
 
 # Update User via ID
-@router.put("/{user_id}", response_model=UserOut)
+@router.put("/{user_id}", response_model=BaseResponse[UserOut])
 def update_user(user_id: int, user: UserUpdate, db: Session = Depends(get_db), api_key: str = Depends(get_api_key)):
     db_user = crud.update_user(db, user_id, user)
     if not db_user:
         raise HTTPException(status_code=404, detail="User Not Found")
-    return db_user
+    return BaseResponse(message="User Updated Successfully ✅", data=db_user)
 
 # Delete User via ID
-@router.delete("/{user_id}")
+@router.delete("/{user_id}", response_model=BaseResponse[UserOut])
 def delete_user(user_id: int, db: Session = Depends(get_db), api_key: str = Depends(get_api_key)):
     db_user = crud.delete_user(db, user_id)
     if not db_user:
         raise HTTPException(status_code=404, detail="User Not Found")
-    return {
-        "message": "User has deleted ✅"
-    }
+    return BaseResponse(message="User Deleted Successfully ✅", data=db_user)
 
 
 

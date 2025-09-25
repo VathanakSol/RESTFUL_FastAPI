@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>All Products</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+      th,
+      td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+      }
+      th {
+        background-color: #f8f9fa;
+        font-weight: bold;
+        color: #555;
+      }
+      tr:hover {
+        background-color: #f5f5f5;
+      }
+      .product-count {
+        text-align: center;
+        color: #666;
+        margin-bottom: 20px;
+      }
+      .no-products {
+        text-align: center;
+        color: #999;
+        font-style: italic;
+        padding: 40px;
+      }
+      .price {
+        font-weight: bold;
+        color: #2e7d32;
+      }
+      .stock-status {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: bold;
+      }
+      .in-stock {
+        background-color: #e8f5e8;
+        color: #2e7d32;
+      }
+      .out-of-stock {
+        background-color: #ffebee;
+        color: #c62828;
+      }
+      .description {
+        max-width: 300px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>All Products</h1>
+
+      {% if products %}
+      <div class="product-count">Total Products: {{ products|length }}</div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Price</th>
+            <th>Stock Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for product in products %}
+          <tr>
+            <td>{{ product.id }}</td>
+            <td>{{ product.name }}</td>
+            <td class="description" title="{{ product.description or 'No description' }}">
+              {{ product.description or 'No description' }}
+            </td>
+            <td class="price">${{ "%.2f"|format(product.price) }}</td>
+            <td>
+              {% if product.stock %}
+                <span class="stock-status in-stock">In Stock</span>
+              {% else %}
+                <span class="stock-status out-of-stock">Out of Stock</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="no-products">No products found in the system.</div>
+      {% endif %}
+    </div>
+  </body>
+</html>

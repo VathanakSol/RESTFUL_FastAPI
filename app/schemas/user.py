@@ -1,4 +1,7 @@
 from pydantic import BaseModel, EmailStr
+from typing import TypeVar, Optional, Generic
+
+T = TypeVar("T")
 
 class UserBase(BaseModel):
     username: str
@@ -15,3 +18,7 @@ class UserOut(UserBase):
 
     class Config: 
         orm_mode = True
+
+class BaseResponse(BaseModel, Generic[T]):
+    message: str
+    data: Optional[T] = None
